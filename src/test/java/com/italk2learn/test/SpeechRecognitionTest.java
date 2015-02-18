@@ -84,9 +84,7 @@ public class SpeechRecognitionTest {
 		}
 		executeSpeechRecognisers(TEST_SR);
 		while (true){
-			System.out.println(srUsed);
 			if (srUsed==TEST_SR){
-				System.out.println("HOLA");
 				srUsed=0;
 				executeSpeechRecognisers(TEST_SR);
 			}
