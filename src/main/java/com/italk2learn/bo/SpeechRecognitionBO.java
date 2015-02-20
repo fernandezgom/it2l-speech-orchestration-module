@@ -42,13 +42,14 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	 * Call http service to init the ASR Engine
 	 */
 	public SpeechRecognitionResponseVO initASREngine(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
-		logger.debug("initASREngine()--- Init ASREngine");
+		logger.info("JLF SpeechRecognitionBO initASREngine()--- Initialising ASREngine instance by user="+request.getHeaderVO().getLoginUser());
 		SpeechRecognitionResponseVO res=new SpeechRecognitionResponseVO();
 		try {
 			Map<String, String> vars = new HashMap<String, String>();
 			//Get an available instance
 			ASRInstanceVO aux= em.getInstanceEngineAvailable(request.getHeaderVO().getLoginUser());
-			System.out.println("Speech module available for user: "+request.getHeaderVO().getLoginUser()+" with instance: "+aux.getInstance().toString() );
+			logger.info("Speech module available for user: "+request.getHeaderVO().getLoginUser()+" with instance: "+aux.getInstance().toString() );
+			System.out.println("Speech module available for user: "+request.getHeaderVO().getLoginUser()+" with instance: "+aux.getInstance().toString());
 			vars.put("user", request.getHeaderVO().getLoginUser());
 			vars.put("instance", aux.getInstance().toString());
 			vars.put("server", aux.getServer());
@@ -68,19 +69,20 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	 * Call http service to close the engine and it receives the final transcription
 	 */
 	public SpeechRecognitionResponseVO closeASREngine(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
-		logger.debug("closeASREngine()--- Closing ASREngine");
+		logger.info("JLF SpeechRecognitionBO closeASREngine() --- Closing ASREngine instance by user="+request.getHeaderVO().getLoginUser());
 		SpeechRecognitionResponseVO res=new SpeechRecognitionResponseVO();
 		String url=em.getUrlByUser(request.getHeaderVO().getLoginUser());
 		Integer instanceNum=em.getInstanceByUser(request.getHeaderVO().getLoginUser());
 		if (instanceNum==null){
-			System.out.println("Instance already released by this user or never used");
-			logger.info("closeASREngine()--- Instance already released by this user or never used");
+			System.out.println("Instance already released by user="+ request.getHeaderVO().getLoginUser()+" or never used");
+			logger.info("closeASREngine()--- Instance already released by user="+ request.getHeaderVO().getLoginUser()+" or never used");
 			return res;
 		}
 		em.releaseEngineInstance(request.getHeaderVO().getLoginUser());
 		request.setInstance(instanceNum);
 		try {
 			System.out.println("Speech module released by user: "+request.getHeaderVO().getLoginUser()+" with instance: "+instanceNum.toString());
+			logger.info("Speech module released by user: "+request.getHeaderVO().getLoginUser()+" with instance: "+instanceNum.toString());
 			String response=this.restTemplate.getForObject(url + "/closeEngine?instance={instance}",String.class, instanceNum.toString());
 			res.setResponse(response);
 			return res;
@@ -94,7 +96,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	 * Call http service to send audio chunks
 	 */
 	public SpeechRecognitionResponseVO sendNewAudioChunk(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
-		logger.debug("sendNewAudioChunk()--- Sending new audio chunk");
+		logger.info("JLF SpeechRecognitionBO sendNewAudioChunk()--- Sending new audio chunk by user="+request.getHeaderVO().getLoginUser());
 		SpeechRecognitionResponseVO res=new SpeechRecognitionResponseVO();
 		request.setInstance(em.getInstanceByUser(request.getHeaderVO().getLoginUser()));
 		try {
@@ -106,14 +108,14 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		return res;
 	}
 	
-	public SpeechRecognitionResponseVO saveByteArray(
-			SpeechRecognitionRequestVO request) throws ITalk2LearnException {
+	public SpeechRecognitionResponseVO saveByteArray(SpeechRecognitionRequestVO request) throws ITalk2LearnException {
+		logger.info("JLF SpeechRecognitionBO saveByteArray()--- Saving sound ByteArray on the database by user="+request.getHeaderVO().getLoginUser());
 		SpeechRecognitionResponseVO response= new SpeechRecognitionResponseVO();
 		try {
 			getAudioStreamDAO().saveByteArray(request.getFinalByteArray(), request.getHeaderVO().getIdUser());
 		}
 		catch (Exception e){
-			logger.error("saveByteArray()--- "+e.toString());
+			logger.error(e.toString());
 		}
 		return response;
 	}
