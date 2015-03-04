@@ -12,7 +12,7 @@ public class SpeechRecognitionResponseVO extends ResponseVO {
 	
 	private String response;
 	
-	private boolean isOpen;
+	private boolean isOpen=false;
 	
 	private List<String> liveResponse;
 

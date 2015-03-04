@@ -15,6 +15,8 @@ import com.italk2learn.dao.inter.IAudioStreamDAO;
 import com.italk2learn.exception.ITalk2LearnException;
 import com.italk2learn.speech.util.EnginesMap;
 import com.italk2learn.vo.ASRInstanceVO;
+import com.italk2learn.vo.AudioRequestVO;
+import com.italk2learn.vo.AudioResponseVO;
 import com.italk2learn.vo.SpeechRecognitionRequestVO;
 import com.italk2learn.vo.SpeechRecognitionResponseVO;
 
@@ -22,13 +24,14 @@ import com.italk2learn.vo.SpeechRecognitionResponseVO;
 @Transactional(rollbackFor = { ITalk2LearnException.class, ITalk2LearnException.class })
 public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	
-	private static final Logger logger = LoggerFactory
-			.getLogger(SpeechRecognitionBO.class);
+	private static final Logger logger = LoggerFactory.getLogger(SpeechRecognitionBO.class);
 	
 	@Autowired
 	private RestTemplate restTemplate;
 	
 	public IAudioStreamDAO audioStreamDAO;
+	
+	private byte[] audio=new byte[0];
 	
 	private EnginesMap em= EnginesMap.getInstance();
 	
@@ -47,17 +50,24 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		try {
 			Map<String, String> vars = new HashMap<String, String>();
 			//Get an available instance
-			ASRInstanceVO aux= em.getInstanceEngineAvailable(request.getHeaderVO().getLoginUser());
-			logger.info("Speech module available for user: "+request.getHeaderVO().getLoginUser()+" with instance: "+aux.getInstance().toString() );
-			System.out.println("Speech module available for user: "+request.getHeaderVO().getLoginUser()+" with instance: "+aux.getInstance().toString());
-			vars.put("user", request.getHeaderVO().getLoginUser());
-			vars.put("instance", aux.getInstance().toString());
-			vars.put("server", aux.getServer());
-			vars.put("language", aux.getLanguageCode());
-			vars.put("model", aux.getModel());
-			//Call initEngineService of an available instance
-			this.restTemplate.getForObject(aux.getUrl() + "/initEngine?user={user}&instance={instance}&server={server}&language={language}&model={model}",String.class, vars);
-			return res;
+			if (em.getInstanceByUser(request.getHeaderVO().getLoginUser())==null){
+				ASRInstanceVO aux= em.getInstanceEngineAvailable(request.getHeaderVO().getLoginUser());
+				logger.info("Speech module available for user: "+request.getHeaderVO().getLoginUser()+" with instance: "+aux.getInstance().toString() );
+				System.out.println("Speech module available for user: "+request.getHeaderVO().getLoginUser()+" with instance: "+aux.getInstance().toString());
+				vars.put("user", request.getHeaderVO().getLoginUser());
+				vars.put("instance", aux.getInstance().toString());
+				vars.put("server", aux.getServer());
+				vars.put("language", aux.getLanguageCode());
+				vars.put("model", aux.getModel());
+				//Call initEngineService of an available instance
+				Boolean resp=this.restTemplate.getForObject(aux.getUrl() + "/initEngine?user={user}&instance={instance}&server={server}&language={language}&model={model}",Boolean.class, vars);
+				res.setOpen(resp);
+				return res;
+			}
+			else {
+				res.setOpen(true);
+				return res;
+			}
 		} catch (Exception e) {
 			em.releaseEngineInstance(request.getHeaderVO().getLoginUser());
 			logger.error(e.toString());
@@ -101,6 +111,8 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		request.setInstance(em.getInstanceByUser(request.getHeaderVO().getLoginUser()));
 		try {
 			res=this.restTemplate.postForObject(em.getUrlByUser(request.getHeaderVO().getLoginUser())+"/sendData", request, SpeechRecognitionResponseVO.class);
+			for (int i=0;i<res.getLiveResponse().size();i++)
+				logger.info("liveResponse word="+ res.getLiveResponse().get(i));
 		} catch (Exception e) {
 			em.releaseEngineInstance(request.getHeaderVO().getLoginUser());
 			logger.error(e.toString());
@@ -113,6 +125,39 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		SpeechRecognitionResponseVO response= new SpeechRecognitionResponseVO();
 		try {
 			getAudioStreamDAO().saveByteArray(request.getFinalByteArray(), request.getHeaderVO().getIdUser());
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+		}
+		return response;
+	}
+	
+	public AudioResponseVO concatenateAudioStream(AudioRequestVO request) throws ITalk2LearnException {
+		logger.info("JLF --- Concatenating audio chunk which it comes each 5 seconds from the audio component");
+		AudioResponseVO response= new AudioResponseVO();
+		try {
+			//JLF:Copying byte array
+			byte[] destination = new byte[request.getAudio().length + getAudio().length];
+			// copy audio into start of destination (from pos 0, copy audio.length bytes)
+			System.arraycopy(getAudio(), 0, destination, 0, getAudio().length);
+			// copy body into end of destination (from pos audio.length, copy body.length bytes)
+			System.arraycopy(request.getAudio(), 0, destination, getAudio().length, request.getAudio().length);
+			//setAudio(Arrays.copyOfRange(destination, 0, destination.length));
+			this.audio=destination.clone();
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+		}
+		return response;
+	}
+	
+	public AudioResponseVO getCurrentAudioFromPlatform(AudioRequestVO request) throws ITalk2LearnException {
+		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on task independent support");
+		AudioResponseVO response= new AudioResponseVO();
+		try {
+			response.setAudio(this.audio);
+			//JLF: Initialising the audio from the platform to be saved at the database and used by TIS
+			this.audio=new byte[0];
 		}
 		catch (Exception e){
 			logger.error(e.toString());
@@ -136,5 +181,12 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		this.audioStreamDAO = audioStreamDAO;
 	}
 
+	public byte[] getAudio() {
+		return audio;
+	}
+
+	public void setAudio(byte[] audio) {
+		this.audio = audio;
+	}
 
 }
