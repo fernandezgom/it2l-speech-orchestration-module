@@ -2,6 +2,8 @@ package com.italk2learn.bo;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ import com.italk2learn.vo.SpeechRecognitionResponseVO;
 public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	
 	private static final Logger logger = LoggerFactory.getLogger(SpeechRecognitionBO.class);
+	private static final int NUM_SECONDS = 30 * 1000;
 	
 	@Autowired
 	private RestTemplate restTemplate;
@@ -34,6 +37,8 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	private byte[] audio=new byte[0];
 	
 	private EnginesMap em= EnginesMap.getInstance();
+	
+	private int SEQ=0;
 	
 	
 	@Autowired
@@ -46,6 +51,9 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	 */
 	public SpeechRecognitionResponseVO initASREngine(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
 		logger.info("JLF SpeechRecognitionBO initASREngine()--- Initialising ASREngine instance by user="+request.getHeaderVO().getLoginUser());
+		Timer timer = new Timer();
+		//JLF Testing each 30 seconds if the speech component is sending data to the server, otherwise close the connection
+		timer.scheduleAtFixedRate(new SpeechRecoTask(request), NUM_SECONDS,NUM_SECONDS);
 		SpeechRecognitionResponseVO res=new SpeechRecognitionResponseVO();
 		try {
 			Map<String, String> vars = new HashMap<String, String>();
@@ -106,6 +114,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	 * Call http service to send audio chunks
 	 */
 	public SpeechRecognitionResponseVO sendNewAudioChunk(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
+		SEQ++;
 		logger.info("JLF SpeechRecognitionBO sendNewAudioChunk()--- Sending new audio chunk by user="+request.getHeaderVO().getLoginUser());
 		SpeechRecognitionResponseVO res=new SpeechRecognitionResponseVO();
 		request.setInstance(em.getInstanceByUser(request.getHeaderVO().getLoginUser()));
@@ -187,6 +196,34 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 
 	public void setAudio(byte[] audio) {
 		this.audio = audio;
+	}
+	
+	
+	//JLF: This class check if speech component is sending data to the Speech Reco, if not it closes the instance with the engine and release this 
+	class SpeechRecoTask extends TimerTask {
+	    
+		private int SEQ_ACK=0;
+		private SpeechRecognitionRequestVO request;
+		
+		public SpeechRecoTask(SpeechRecognitionRequestVO request) {
+			super();
+			this.request = request;
+		}
+
+		public void run() {
+	    	if (SEQ==SEQ_ACK) {
+	    		try {
+					closeASREngine(request);
+					this.cancel();
+				} catch (ITalk2LearnException e) {
+					// TODO Auto-generated catch block
+					logger.error(e.toString());
+				}
+		    }
+	    	else {
+	    		SEQ_ACK=SEQ;
+	    	}
+	    }
 	}
 
 }

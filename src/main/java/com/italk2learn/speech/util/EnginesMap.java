@@ -1,6 +1,7 @@
 package com.italk2learn.speech.util;
 
 import java.util.HashMap;
+import java.util.ResourceBundle;
 
 import com.italk2learn.vo.ASRInstanceVO;
 
@@ -8,20 +9,25 @@ public class EnginesMap {
 	
 	private static EnginesMap instance = null;
 	
-	private static final String LANGUAGE = "en_ux";
+	private String LANGUAGE = "en_ux";
 	private static final String SERVER = "localhost";
-	private static final String MODEL = "base";
-	private static final String SERVER_PART1 = "http://193.61.29.166:";
+	private String MODEL = "base";
+	private String SERVER_PART1 = "http://193.61.29.166:";
 	private static final String SERVER_PART2 = "/italk2learnsm/speechRecognition";
 	
 	//JLF: Key=ServerID, Value=AsrInstanceVO 
 	private HashMap<Integer, ASRInstanceVO> engines;
 	
 	protected EnginesMap() {
+		ResourceBundle rb= ResourceBundle.getBundle("italk2learn-config");
+		LANGUAGE=rb.getString("speech.language");
+		MODEL=rb.getString("speech.model");
+		SERVER_PART1=rb.getString("speech.server");
+		int numInstances=Integer.parseInt(rb.getString("speech.numinstances"));
 		engines= new HashMap<Integer, ASRInstanceVO>();
 		//JLF: Making an engine of 30 instances. The summative evaluations will contain 30 students		
 		int port=8081;
-		for (int i=1;i<=30;i++){
+		for (int i=1;i<=numInstances;i++){
 			ASRInstanceVO server= new ASRInstanceVO();
 			server.setAvailability(true);
 			server.setInstance(i);
