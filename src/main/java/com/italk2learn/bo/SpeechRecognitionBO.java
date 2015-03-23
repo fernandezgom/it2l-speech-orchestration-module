@@ -35,6 +35,8 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	public IAudioStreamDAO audioStreamDAO;
 	
 	private byte[] audio=new byte[0];
+	//Store all audio in current exercise
+	private byte[] audioExercise=new byte[0];
 	
 	private EnginesMap em= EnginesMap.getInstance();
 	
@@ -174,6 +176,20 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		return response;
 	}
 	
+	public AudioResponseVO getCurrentAudioFromExercise(AudioRequestVO request) throws ITalk2LearnException {
+		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on task independent support");
+		AudioResponseVO response= new AudioResponseVO();
+		try {
+			response.setAudio(this.audio);
+			//JLF: Initialising the audio from the platform to be saved at the database and used by TIS
+			this.audio=new byte[0];
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+		}
+		return response;
+	}
+	
 	public EnginesMap getEm() {
 		return em;
 	}
@@ -199,6 +215,15 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	}
 	
 	
+	public byte[] getAudioExercise() {
+		return audioExercise;
+	}
+
+	public void setAudioExercise(byte[] audioExercise) {
+		this.audioExercise = audioExercise;
+	}
+
+
 	//JLF: This class check if speech component is sending data to the Speech Reco, if not it closes the instance with the engine and release this 
 	class SpeechRecoTask extends TimerTask {
 	    
