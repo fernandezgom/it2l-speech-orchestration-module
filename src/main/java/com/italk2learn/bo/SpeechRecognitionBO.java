@@ -43,6 +43,11 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	private int SEQ=0;
 	
 	
+	//524288 each 5 seconds
+	//12 times per minute
+	private static final int SIZE_AUDIO = 2 * 12 * 524288;
+	
+	
 	@Autowired
 	public SpeechRecognitionBO(IAudioStreamDAO audioStreamDAO) {
 		this.audioStreamDAO = audioStreamDAO;
@@ -53,6 +58,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	 */
 	public SpeechRecognitionResponseVO initASREngine(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
 		logger.info("JLF SpeechRecognitionBO initASREngine()--- Initialising ASREngine instance by user="+request.getHeaderVO().getLoginUser());
+		cleanAllAudioVariables();
 		Timer timer = new Timer();
 		//JLF Testing each 30 seconds if the speech component is sending data to the server, otherwise close the connection
 		timer.scheduleAtFixedRate(new SpeechRecoTask(request), NUM_SECONDS,NUM_SECONDS);
@@ -90,6 +96,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	 */
 	public SpeechRecognitionResponseVO closeASREngine(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
 		logger.info("JLF SpeechRecognitionBO closeASREngine() --- Closing ASREngine instance by user="+request.getHeaderVO().getLoginUser());
+		cleanAllAudioVariables();
 		SpeechRecognitionResponseVO res=new SpeechRecognitionResponseVO();
 		String url=em.getUrlByUser(request.getHeaderVO().getLoginUser());
 		Integer instanceNum=em.getInstanceByUser(request.getHeaderVO().getLoginUser());
@@ -155,6 +162,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 			System.arraycopy(request.getAudio(), 0, destination, getAudio().length, request.getAudio().length);
 			//setAudio(Arrays.copyOfRange(destination, 0, destination.length));
 			this.audio=destination.clone();
+			this.audioExercise=destination.clone();
 		}
 		catch (Exception e){
 			logger.error(e.toString());
@@ -162,13 +170,17 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		return response;
 	}
 	
+	// JLF: Get the current stored audio, should be 2 minutes at least
 	public AudioResponseVO getCurrentAudioFromPlatform(AudioRequestVO request) throws ITalk2LearnException {
 		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on task independent support");
 		AudioResponseVO response= new AudioResponseVO();
 		try {
-			response.setAudio(this.audio);
-			//JLF: Initialising the audio from the platform to be saved at the database and used by TIS
-			this.audio=new byte[0];
+			//JLF:The audio should be more than 2 minutes for analysis
+			if (this.audio.length>SIZE_AUDIO){
+				response.setAudio(this.audio);
+				//JLF: Initialising the audio from the platform to be saved at the database and used by TIS
+				this.audio=new byte[0];
+			}
 		}
 		catch (Exception e){
 			logger.error(e.toString());
@@ -176,18 +188,24 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		return response;
 	}
 	
+	// JLF: Get whole audio from exercise, until 10 minutes
 	public AudioResponseVO getCurrentAudioFromExercise(AudioRequestVO request) throws ITalk2LearnException {
 		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on task independent support");
 		AudioResponseVO response= new AudioResponseVO();
 		try {
-			response.setAudio(this.audio);
+			response.setAudioExercise(this.audioExercise);
 			//JLF: Initialising the audio from the platform to be saved at the database and used by TIS
-			this.audio=new byte[0];
+			this.audioExercise=new byte[0];
 		}
 		catch (Exception e){
 			logger.error(e.toString());
 		}
 		return response;
+	}
+	
+	public void cleanAllAudioVariables() throws ITalk2LearnException {
+		this.audio=new byte[0];
+		this.audioExercise=new byte[0];
 	}
 	
 	public EnginesMap getEm() {

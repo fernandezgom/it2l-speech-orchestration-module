@@ -10,6 +10,8 @@ public class AudioResponseVO extends ResponseVO {
 	private String type;
 	
 	private byte[] audio;
+	
+	private byte[] audioExercise;
 
 	public byte[] getAudio() {
 		return audio;
@@ -25,6 +27,14 @@ public class AudioResponseVO extends ResponseVO {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public byte[] getAudioExercise() {
+		return audioExercise;
+	}
+
+	public void setAudioExercise(byte[] audioExercise) {
+		this.audioExercise = audioExercise;
 	}
 
 }

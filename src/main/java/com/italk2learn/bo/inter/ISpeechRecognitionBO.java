@@ -19,5 +19,7 @@ public interface ISpeechRecognitionBO {
 	public AudioResponseVO concatenateAudioStream(AudioRequestVO request) throws ITalk2LearnException;
 	
 	public AudioResponseVO getCurrentAudioFromPlatform(AudioRequestVO request) throws ITalk2LearnException;
-
+	
+	public AudioResponseVO getCurrentAudioFromExercise(AudioRequestVO request) throws ITalk2LearnException;
+	
 }
