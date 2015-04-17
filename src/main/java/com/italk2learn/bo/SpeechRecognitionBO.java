@@ -1,5 +1,6 @@
 package com.italk2learn.bo;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -45,7 +46,9 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	
 	//524288 each 5 seconds
 	//12 times per minute
-	private static final int SIZE_AUDIO = 2 * 12 * 524288;
+	private static final int SIZE_AUDIO_2MINUTES = 2 * 12 * 524288;
+	
+	private static final int SIZE_AUDIO_10MINUTES = 10 * 12 * 524288;
 	
 	
 	@Autowired
@@ -170,17 +173,20 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		return response;
 	}
 	
-	// JLF: Get the current stored audio, should be 2 minutes at least
+	// JLF: Get the current stored audio, 2 minutes
 	public AudioResponseVO getCurrentAudioFromPlatform(AudioRequestVO request) throws ITalk2LearnException {
-		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on task independent support");
+		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on TIS current_audio_length= "+this.audio.length);
 		AudioResponseVO response= new AudioResponseVO();
 		try {
 			//JLF:The audio should be more than 2 minutes for analysis
-			if (this.audio.length>SIZE_AUDIO){
-				response.setAudio(this.audio);
-				//JLF: Initialising the audio from the platform to be saved at the database and used by TIS
-				this.audio=new byte[0];
+			if (this.audio.length>SIZE_AUDIO_2MINUTES) {
+				int init=this.audio.length-SIZE_AUDIO_2MINUTES;
+				if ((init % 16)!=0)
+					init=init-(init % 16);
+				byte[] destination = Arrays.copyOfRange(this.audio, init, this.audio.length);
+				this.audio=destination.clone();
 			}
+			response.setAudio(this.audio);
 		}
 		catch (Exception e){
 			logger.error(e.toString());
@@ -188,14 +194,19 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		return response;
 	}
 	
-	// JLF: Get whole audio from exercise, until 10 minutes
+	// JLF: Get whole audio from exercise, 10 minutes
 	public AudioResponseVO getCurrentAudioFromExercise(AudioRequestVO request) throws ITalk2LearnException {
-		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on task independent support");
+		logger.info("JLF --- getCurrentAudioFromExercise-- Get current audio to use on SNA current_audio_length= "+this.audioExercise.length);
 		AudioResponseVO response= new AudioResponseVO();
 		try {
+			if (this.audioExercise.length>SIZE_AUDIO_10MINUTES) {
+				int init=this.audioExercise.length-SIZE_AUDIO_10MINUTES;
+				if ((init % 16)!=0)
+					init=init-(init % 16);
+				byte[] destination = Arrays.copyOfRange(this.audioExercise, init, this.audioExercise.length);
+				this.audioExercise=destination.clone();
+			}
 			response.setAudioExercise(this.audioExercise);
-			//JLF: Initialising the audio from the platform to be saved at the database and used by TIS
-			this.audioExercise=new byte[0];
 		}
 		catch (Exception e){
 			logger.error(e.toString());
