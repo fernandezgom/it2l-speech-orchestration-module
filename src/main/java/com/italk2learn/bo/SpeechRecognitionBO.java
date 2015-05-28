@@ -46,7 +46,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	
 	//524288 each 5 seconds
 	//12 times per minute
-	private static final int SIZE_AUDIO_2MINUTES = 2 * 12 * 524288;
+	private static final int SIZE_AUDIO_1MINUTES = 1 * 12 * 524288;
 	
 	private static final int SIZE_AUDIO_10MINUTES = 10 * 12 * 524288;
 	
@@ -179,8 +179,8 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		AudioResponseVO response= new AudioResponseVO();
 		try {
 			//JLF:The audio should be more than 2 minutes for analysis
-			if (this.audio.length>SIZE_AUDIO_2MINUTES) {
-				int init=this.audio.length-SIZE_AUDIO_2MINUTES;
+			if (this.audio.length>SIZE_AUDIO_1MINUTES) {
+				int init=this.audio.length-SIZE_AUDIO_1MINUTES;
 				if ((init % 16)!=0)
 					init=init-(init % 16);
 				byte[] destination = Arrays.copyOfRange(this.audio, init, this.audio.length);
