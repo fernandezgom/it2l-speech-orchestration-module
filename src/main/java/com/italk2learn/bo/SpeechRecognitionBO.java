@@ -165,7 +165,18 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 			System.arraycopy(request.getAudio(), 0, destination, getAudio().length, request.getAudio().length);
 			//setAudio(Arrays.copyOfRange(destination, 0, destination.length));
 			this.audio=destination.clone();
-			this.audioExercise=destination.clone();
+			
+			//byte[] destination2 = new byte[request.getAudio().length + getAudioExercise().length];
+			// copy audio into start of destination2 (from pos 0, copy audio.length bytes)
+			//System.arraycopy(getAudio(), 0, destination2, 0, getAudioExercise().length);
+			// copy body into end of destination2 (from pos audio.length, copy body.length bytes)
+			//System.arraycopy(request.getAudio(), 0, destination2, getAudioExercise().length, request.getAudio().length);
+			
+			//this.audioExercise=destination2.clone();
+			
+			destination=null;
+			//destination2=null;
+			
 		}
 		catch (Exception e){
 			logger.error(e.toString());
