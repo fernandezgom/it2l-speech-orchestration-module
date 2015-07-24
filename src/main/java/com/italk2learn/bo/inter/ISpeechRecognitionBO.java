@@ -16,10 +16,10 @@ public interface ISpeechRecognitionBO {
 	
 	public SpeechRecognitionResponseVO saveByteArray(SpeechRecognitionRequestVO request) throws ITalk2LearnException;
 	
-	public AudioResponseVO concatenateAudioStream(AudioRequestVO request) throws ITalk2LearnException;
+	public AudioResponseVO concatenateAudioStream(SpeechRecognitionRequestVO request) throws ITalk2LearnException;
 	
-	public AudioResponseVO getCurrentAudioFromPlatform(AudioRequestVO request) throws ITalk2LearnException;
+	public AudioResponseVO getCurrentAudioFromPlatform(SpeechRecognitionRequestVO request) throws ITalk2LearnException;
 	
-	public AudioResponseVO getCurrentAudioFromExercise(AudioRequestVO request) throws ITalk2LearnException;
+	public AudioResponseVO getCurrentAudioFromExercise(SpeechRecognitionRequestVO request) throws ITalk2LearnException;
 	
 }

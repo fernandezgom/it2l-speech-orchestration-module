@@ -153,24 +153,24 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 		return response;
 	}
 	
-	public AudioResponseVO concatenateAudioStream(AudioRequestVO request) throws ITalk2LearnException {
+	public AudioResponseVO concatenateAudioStream(SpeechRecognitionRequestVO request) throws ITalk2LearnException {
 		logger.info("JLF --- Concatenating audio chunk which it comes each 5 seconds from the audio component");
 		AudioResponseVO response= new AudioResponseVO();
 		try {
 			//JLF:Copying byte array
-			byte[] destination = new byte[request.getAudio().length + getAudio().length];
+			byte[] destination = new byte[request.getData().length + getAudio().length];
 			// copy audio into start of destination (from pos 0, copy audio.length bytes)
 			System.arraycopy(getAudio(), 0, destination, 0, getAudio().length);
 			// copy body into end of destination (from pos audio.length, copy body.length bytes)
-			System.arraycopy(request.getAudio(), 0, destination, getAudio().length, request.getAudio().length);
+			System.arraycopy(request.getData(), 0, destination, getAudio().length, request.getData().length);
 			//setAudio(Arrays.copyOfRange(destination, 0, destination.length));
 			this.audio=destination.clone();
 			
-			//byte[] destination2 = new byte[request.getAudio().length + getAudioExercise().length];
+			//byte[] destination2 = new byte[request.getData().length + getAudioExercise().length];
 			// copy audio into start of destination2 (from pos 0, copy audio.length bytes)
 			//System.arraycopy(getAudio(), 0, destination2, 0, getAudioExercise().length);
 			// copy body into end of destination2 (from pos audio.length, copy body.length bytes)
-			//System.arraycopy(request.getAudio(), 0, destination2, getAudioExercise().length, request.getAudio().length);
+			//System.arraycopy(request.getAudio(), 0, destination2, getAudioExercise().length, request.getData().length);
 			
 			//this.audioExercise=destination2.clone();
 			
@@ -185,7 +185,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	}
 	
 	// JLF: Get the current stored audio, 2 minutes
-	public AudioResponseVO getCurrentAudioFromPlatform(AudioRequestVO request) throws ITalk2LearnException {
+	public AudioResponseVO getCurrentAudioFromPlatform(SpeechRecognitionRequestVO request) throws ITalk2LearnException {
 		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on TIS current_audio_length= "+this.audio.length);
 		AudioResponseVO response= new AudioResponseVO();
 		try {
@@ -206,7 +206,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	}
 	
 	// JLF: Get whole audio from exercise, 10 minutes
-	public AudioResponseVO getCurrentAudioFromExercise(AudioRequestVO request) throws ITalk2LearnException {
+	public AudioResponseVO getCurrentAudioFromExercise(SpeechRecognitionRequestVO request) throws ITalk2LearnException {
 		logger.info("JLF --- getCurrentAudioFromExercise-- Get current audio to use on SNA current_audio_length= "+this.audioExercise.length);
 		AudioResponseVO response= new AudioResponseVO();
 		try {

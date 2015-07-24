@@ -12,7 +12,9 @@ public class EnginesMap {
 	private String LANGUAGE = "en_ux";
 	private static final String SERVER = "localhost";
 	private String MODEL = "base";
-	private String SERVER_PART1 = "http://193.61.29.166:";
+	private String SERVER_1 = "http://193.61.29.166:";
+	private String SERVER_2 = "http://193.61.29.166:";
+	private String SERVER_3 = "http://193.61.29.166:";
 	private static final String SERVER_PART2 = "/italk2learnsm/speechRecognition";
 	
 	//JLF: Key=ServerID, Value=AsrInstanceVO 
@@ -22,22 +24,58 @@ public class EnginesMap {
 		ResourceBundle rb= ResourceBundle.getBundle("italk2learn-config");
 		LANGUAGE=rb.getString("speech.language");
 		MODEL=rb.getString("speech.model");
-		SERVER_PART1=rb.getString("speech.server");
+		SERVER_1=rb.getString("speech.server1");
+		SERVER_2=rb.getString("speech.server2");
+		SERVER_3=rb.getString("speech.server3");
 		int numInstances=Integer.parseInt(rb.getString("speech.numinstances"));
 		engines= new HashMap<Integer, ASRInstanceVO>();
 		//JLF: Making an engine of 30 instances. The summative evaluations will contain 30 students		
 		int port=8081;
-		for (int i=1;i<=numInstances;i++){
+		int instance=1;
+		for (int i=1;i<=numInstances;i+=3){
 			ASRInstanceVO server= new ASRInstanceVO();
 			server.setAvailability(true);
-			server.setInstance(i);
+			server.setInstance(instance);
 			server.setId(i);
 			server.setLanguageCode(LANGUAGE);
 			server.setServer(SERVER);
 			server.setModel(MODEL);
 			server.setUser("");
-			server.setUrl(SERVER_PART1+port+SERVER_PART2);
+			server.setUrl(SERVER_1+port+SERVER_PART2);
 			port++;
+			instance++;
+			engines.put(i,server);			
+		}
+		port=8081;
+		instance=1;
+		for (int i=2;i<=numInstances;i+=3){
+			ASRInstanceVO server= new ASRInstanceVO();
+			server.setAvailability(true);
+			server.setInstance(instance);
+			server.setId(i);
+			server.setLanguageCode(LANGUAGE);
+			server.setServer(SERVER);
+			server.setModel(MODEL);
+			server.setUser("");
+			server.setUrl(SERVER_2+port+SERVER_PART2);
+			port++;
+			instance++;
+			engines.put(i,server);			
+		}
+		port=8081;
+		instance=1;
+		for (int i=3;i<=numInstances;i+=3){
+			ASRInstanceVO server= new ASRInstanceVO();
+			server.setAvailability(true);
+			server.setInstance(instance);
+			server.setId(i);
+			server.setLanguageCode(LANGUAGE);
+			server.setServer(SERVER);
+			server.setModel(MODEL);
+			server.setUser("");
+			server.setUrl(SERVER_3+port+SERVER_PART2);
+			port++;
+			instance++;
 			engines.put(i,server);			
 		}
 		this.setEngines(engines);
