@@ -1,8 +1,12 @@
 package com.italk2learn.speech.util;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Map.Entry;
 
+import com.italk2learn.util.MessagesConverter;
 import com.italk2learn.vo.ASRInstanceVO;
 
 public class EnginesMap {
@@ -99,6 +103,21 @@ public class EnginesMap {
 				return aux;
 			}
 		return aux;
+	}
+	
+	public String getAllInfo(){
+		String result;
+		String result2="";
+		int counter=0;
+		for(Integer key: engines.keySet()) {
+			if (engines.get(key).getAvailability()==false) {
+				counter++;
+				result2.concat("Instance "+engines.get(key).getInstance()+ "is used by user '"+engines.get(key).getUser()+"'\n");
+			}
+		   result="There are " + counter +" speech reco instances working (out of"+ engines.size()+")\n";
+		   result.concat(result2);
+		}
+		return result;
 	}
 	
 	public String getUrlByUser(String user) {

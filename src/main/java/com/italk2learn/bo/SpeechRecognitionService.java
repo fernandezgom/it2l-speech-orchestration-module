@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Future;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,16 +21,15 @@ import com.italk2learn.dao.inter.IAudioStreamDAO;
 import com.italk2learn.exception.ITalk2LearnException;
 import com.italk2learn.speech.util.EnginesMap;
 import com.italk2learn.vo.ASRInstanceVO;
-import com.italk2learn.vo.AudioRequestVO;
 import com.italk2learn.vo.AudioResponseVO;
 import com.italk2learn.vo.SpeechRecognitionRequestVO;
 import com.italk2learn.vo.SpeechRecognitionResponseVO;
 
 @Service("speechRecognitionBO")
 @Transactional(rollbackFor = { ITalk2LearnException.class, ITalk2LearnException.class })
-public class SpeechRecognitionBO implements ISpeechRecognitionBO {
+public class SpeechRecognitionService implements ISpeechRecognitionBO {
 	
-	private static final Logger logger = LoggerFactory.getLogger(SpeechRecognitionBO.class);
+	private static final Logger logger = LoggerFactory.getLogger(SpeechRecognitionService.class);
 	private static final int NUM_SECONDS = 30 * 1000;
 	
 	@Autowired
@@ -52,7 +54,7 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	
 	
 	@Autowired
-	public SpeechRecognitionBO(IAudioStreamDAO audioStreamDAO) {
+	public SpeechRecognitionService(IAudioStreamDAO audioStreamDAO) {
 		this.audioStreamDAO = audioStreamDAO;
 	}
 
@@ -123,22 +125,22 @@ public class SpeechRecognitionBO implements ISpeechRecognitionBO {
 	}
 	
 	/*
-	 * Call http service to send audio chunks
+	 * Call http service to send audio chunks, asynchronous communication
 	 */
-	public SpeechRecognitionResponseVO sendNewAudioChunk(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
+	@Async
+	public Future<SpeechRecognitionResponseVO> sendNewAudioChunk(SpeechRecognitionRequestVO request) throws ITalk2LearnException{
 		SEQ++;
 		logger.info("JLF SpeechRecognitionBO sendNewAudioChunk()--- Sending new audio chunk by user="+request.getHeaderVO().getLoginUser());
 		SpeechRecognitionResponseVO res=new SpeechRecognitionResponseVO();
 		request.setInstance(em.getInstanceByUser(request.getHeaderVO().getLoginUser()));
 		try {
 			res=this.restTemplate.postForObject(em.getUrlByUser(request.getHeaderVO().getLoginUser())+"/sendData", request, SpeechRecognitionResponseVO.class);
-			for (int i=0;i<res.getLiveResponse().size();i++)
-				logger.info("liveResponse word="+ res.getLiveResponse().get(i));
+			Thread.sleep(1000L);
 		} catch (Exception e) {
 			em.releaseEngineInstance(request.getHeaderVO().getLoginUser());
 			logger.error(e.toString());
 		}
-		return res;
+		return new AsyncResult<SpeechRecognitionResponseVO> (res);
 	}
 	
 	public SpeechRecognitionResponseVO saveByteArray(SpeechRecognitionRequestVO request) throws ITalk2LearnException {
