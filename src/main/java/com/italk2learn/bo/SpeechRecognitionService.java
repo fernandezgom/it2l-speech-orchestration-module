@@ -1,17 +1,22 @@
 package com.italk2learn.bo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Future;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -20,15 +25,23 @@ import com.italk2learn.bo.inter.ISpeechRecognitionBO;
 import com.italk2learn.dao.inter.IAudioStreamDAO;
 import com.italk2learn.exception.ITalk2LearnException;
 import com.italk2learn.speech.util.EnginesMap;
+import com.italk2learn.util.CreateWavFileUtil;
 import com.italk2learn.vo.ASRInstanceVO;
 import com.italk2learn.vo.AudioResponseVO;
 import com.italk2learn.vo.SpeechRecognitionRequestVO;
 import com.italk2learn.vo.SpeechRecognitionResponseVO;
 
 @Service("speechRecognitionBO")
+@Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 @Transactional(rollbackFor = { ITalk2LearnException.class, ITalk2LearnException.class })
 public class SpeechRecognitionService implements ISpeechRecognitionBO {
 	
+	public SpeechRecognitionService() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
+
 	private static final Logger logger = LoggerFactory.getLogger(SpeechRecognitionService.class);
 	private static final int NUM_SECONDS = 30 * 1000;
 	
@@ -37,9 +50,15 @@ public class SpeechRecognitionService implements ISpeechRecognitionBO {
 	
 	public IAudioStreamDAO audioStreamDAO;
 	
+	//Record only the last minute
 	private byte[] audio=new byte[0];
 	//Store all audio in current exercise
 	private byte[] audioExercise=new byte[0];
+	
+	//Audio to store by the platform each 1 minute
+	private byte[] audioToStore=new byte[0];
+	private int audioCounter=0;
+	private int globalCounter=0;
 	
 	private EnginesMap em= EnginesMap.getInstance();
 	
@@ -186,6 +205,51 @@ public class SpeechRecognitionService implements ISpeechRecognitionBO {
 		return response;
 	}
 	
+	
+	
+	//JLF Save 1 minute audio in the platform
+	public AudioResponseVO createAudioFile(SpeechRecognitionRequestVO request) throws ITalk2LearnException {
+		logger.info("JLF --- Concatenating audio chunk which it comes each 5 seconds from the audio component");
+		AudioResponseVO response= new AudioResponseVO();
+		try {
+			//Adding 1 to the counter until we have 12 chunks
+			audioCounter++;
+			//JLF:Copying byte array
+			byte[] destination = new byte[request.getData().length + getAudioToStore().length];
+			// copy audio into start of destination (from pos 0, copy audio.length bytes)
+			System.arraycopy(getAudioToStore(), 0, destination, 0, getAudioToStore().length);
+			// copy body into end of destination (from pos audio.length, copy body.length bytes)
+			System.arraycopy(request.getData(), 0, destination, getAudioToStore().length, request.getData().length);
+			//setAudio(Arrays.copyOfRange(destination, 0, destination.length));
+			this.audioToStore=destination.clone();
+			destination=null;
+			
+			if (audioCounter==12) {
+				ResourceBundle rb= ResourceBundle.getBundle("italk2learn-config");
+				String PATH=rb.getString("au.path");
+				globalCounter++;
+		        List<byte[]> exampleChunks = new ArrayList<byte[]>();
+		        exampleChunks.add(this.audioToStore);
+		
+		        int numberOfChunksToCombine = exampleChunks.size();
+		
+		        CreateWavFileUtil wavcreation = new CreateWavFileUtil();
+		        for (int i = 0; i < numberOfChunksToCombine; i++) {
+		            wavcreation.addChunk(exampleChunks.get(i));
+		        }
+		
+		        // Create wav from the last x (here numberOfChunksToCombine) chunks (x = seconds/5)
+		        wavcreation.createWavFile(numberOfChunksToCombine, request.getHeaderVO().getLoginUser(), globalCounter, PATH);
+		        audioCounter=0;
+		        audioToStore=new byte[0];
+			}
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+		}
+		return response;
+	}
+	
 	// JLF: Get the current stored audio, 2 minutes
 	public AudioResponseVO getCurrentAudioFromPlatform(SpeechRecognitionRequestVO request) throws ITalk2LearnException {
 		logger.info("JLF --- getCurrentAudioFromPlatform-- Get current audio to use on TIS current_audio_length= "+this.audio.length);
@@ -263,6 +327,15 @@ public class SpeechRecognitionService implements ISpeechRecognitionBO {
 
 	public void setAudioExercise(byte[] audioExercise) {
 		this.audioExercise = audioExercise;
+	}
+
+
+	public byte[] getAudioToStore() {
+		return audioToStore;
+	}
+
+	public void setAudioToStore(byte[] audioToStore) {
+		this.audioToStore = audioToStore;
 	}
 
 

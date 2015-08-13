@@ -23,4 +23,6 @@ public interface ISpeechRecognitionBO {
 	
 	public AudioResponseVO getCurrentAudioFromExercise(SpeechRecognitionRequestVO request) throws ITalk2LearnException;
 	
+	public AudioResponseVO createAudioFile(SpeechRecognitionRequestVO request) throws ITalk2LearnException;
+	
 }
